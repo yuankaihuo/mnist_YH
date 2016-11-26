@@ -99,9 +99,12 @@ def get_tf_out(trainimg,out_name):
 
 
 
-def add_noise(trainimg,mean,std):
+def add_noise(trainimg,mu,std):
     for i in range(trainimg.shape[0]):
-        noise = np.random.normal(mean,std,trainimg.shape[1]);
+        if std==0:
+            noise = mu
+        else:
+            noise = np.random.normal(mu,std,trainimg.shape[1]);
         trainimg_255 = np.multiply(trainimg[i], 255.0)
         trainimg_noised = trainimg_255+noise;
         trainimg_noised = np.clip(trainimg_noised,0.0,255.0)
