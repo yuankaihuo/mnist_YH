@@ -88,16 +88,14 @@ def plot_input(images,channel):
     plt.matshow(allImg, cmap=plt.get_cmap('gray'))
     plt.axis('off')
 
-def get_tf_out(trainimg,out_name):
-    init = tf.initialize_all_variables()
-    sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
-    sess.run(init)
-    weights,biases = variable_init()
+def get_tf_out(trainimg,out_name,sess,weights,biases):
     conv_out = conv_basic(x, weights, biases, keepratio)
     out_data = sess.run(conv_out[out_name], feed_dict={x: trainimg[0:100, :]})
     return out_data
 
-
+def show_trainimg(trainimg,sess,weights,biases):
+    input_r = get_tf_out(trainimg,'input_r',sess,weights,biases)
+    plot_input(input_r,0)
 
 def add_noise(trainimg,mu,std):
     for i in range(trainimg.shape[0]):
@@ -177,8 +175,7 @@ def conv_basic(_input, _w, _b, _keepratio):
     
 
 
-def init_graph():    
-    weights,biases = variable_init()
+def init_graph(weights,biases):    
     # FUNCTIONS
     #with tf.device(device_type):
     _pred = conv_basic(x, weights, biases, keepratio)['out']
@@ -193,8 +190,9 @@ def init_graph():
     return cost,optm,accr,sess
 
 #device_type = "/cpu:1"
-def train_net(trainimg,trainlabel,cnn_file_name,training_epochs):
-    cost,optm,accr,sess = init_graph()  
+def train_net(trainimg,trainlabel,cnn_file_name,training_epochs,cost,optm,accr,sess):
+    init = tf.initialize_all_variables()
+    sess.run(init)
     print ("=== CNN TRAINING START ===")
     # SAVER
     saver = tf.train.Saver(max_to_keep=1)
@@ -220,9 +218,8 @@ def train_net(trainimg,trainlabel,cnn_file_name,training_epochs):
     
             # Display logs per epoch step
             if epoch % display_step == 0: 
-                print ("Epoch: %03d/%03d cost: %.9f" % (epoch, training_epochs, avg_cost))
                 train_acc = sess.run(accr, feed_dict={x: batch_xs, y: batch_ys, keepratio:1.})
-                print (" Training accuracy: %.3f" % (train_acc))
+                print (" Epoch: %03d/%03d cost: %.9f, Training accuracy: %.3f" % (epoch, training_epochs, avg_cost, train_acc))
     #            test_acc = sess.run(accr, feed_dict={x: testimg[0:1000], y: testlabel[0:1000], keepratio:1.})
     #            print (" Test accuracy: %.3f" % (test_acc))
     
@@ -254,7 +251,7 @@ def next_batch(trainimg, trainlabel, batch_size, index_in_epoch, epochs_complete
       # Start next epoch
       start = 0
       index_in_epoch = batch_size
-      print ("* permutate the training images [eoches completed %d] *" % (epochs_completed))
+#      print ("* permutate the training images [eoches completed %d] *" % (epochs_completed))
       assert batch_size <= num_examples
     end = index_in_epoch
     return trainimg[start:end], trainlabel[start:end], index_in_epoch, epochs_completed, trainimg, trainlabel
