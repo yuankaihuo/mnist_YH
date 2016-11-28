@@ -23,10 +23,10 @@ keepratio = tf.placeholder(tf.float32)
 
 
 def init_expr(mnist,expr):
-    trainimg   = mnist.train.images
-    trainlabel = mnist.train.labels
-    testimg    = mnist.test.images
-    testlabel  = mnist.test.labels
+    trainimg   = np.copy(mnist.train.images)
+    trainlabel = np.copy(mnist.train.labels)
+    testimg    = np.copy(mnist.test.images)
+    testlabel  = np.copy(mnist.test.labels)
     
     add_gaussian_noise = expr['add_gaussian_noise']
     add_label_noise = expr['add_label_noise']
@@ -187,7 +187,7 @@ def init_graph(weights,biases):
     sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
     sess.run(init)
 #    print ("=== GRAPH READY ===")
-    return cost,optm,accr,sess
+    return cost,optm,accr,sess,_corr
 
 #device_type = "/cpu:1"
 def train_net(trainimg,trainlabel,cnn_file_name,training_epochs,cost,optm,accr,sess):
@@ -261,9 +261,27 @@ def next_batch(trainimg, trainlabel, batch_size, index_in_epoch, epochs_complete
 def test_net(testimg,testlabel,sess,accr):
     print ("=== CNN TESTING START ===")
     test_acc = sess.run(accr, feed_dict={x: testimg, y: testlabel, keepratio:1})
-    print (" TEST ACCURACY: %.3f" % (test_acc))
+    print (" TEST ACCURACY: %.5f" % (test_acc))
     print ("=== CNN TESTING FINISHED ===")
     return test_acc
+    
+def test_net_each_class(testimg,testlabel,sess,_corr):
+    test_corr = sess.run(_corr, feed_dict={x: testimg, y: testlabel, keepratio:1})      
+    binary_corr = sess.run(tf.cast(test_corr,tf.float32))
+    
+    print ("=== CNN TESTING EACH CLASS START ===")
+    class_num = testlabel.argmax(axis=1)
+    test_acc_list = [];
+    sumnum = 0
+    for i in range(10):        
+        class_inds = np.where(class_num==i)[0]
+        test_acc = np.mean(binary_corr[class_inds])
+        print (" TEST ERROR RATE: %.5f FOR CLASS DIGIT %d [size=%d]" % (1-test_acc,i,class_inds.shape[0]))
+        test_acc_list.append(test_acc)
+        sumnum = sumnum + class_inds.shape[0]*test_acc
+    print ("=== CNN TESTING EACH CLASS FINISHED ===")
+    return np.array(test_acc_list)
+
 
 
 #plot_images(trainimg)

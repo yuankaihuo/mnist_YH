@@ -14,9 +14,9 @@ mnist = input_data.read_data_sets('data/', one_hot=True)
 print ("=== MNIST READY ===")
 
 #Specify how many epochs you want during training 
-training_epochs = 15
+training_epochs = 1
 weights,biases = cnn.variable_init()
-cost,optm,accr,sess = cnn.init_graph(weights,biases)
+cost,optm,accr,sess,_corr = cnn.init_graph(weights,biases)
 
 #cnn.show_trainimg(mnist.train.images,sess,weights,biases)
 
@@ -24,58 +24,42 @@ cost,optm,accr,sess = cnn.init_graph(weights,biases)
 #setup the first experiement, using cnn
 expriment1 = {'add_gaussian_noise':0 , 'add_label_noise':0}
 trainimg, trainlabel, testimg, testlabel, cnn_file_name = cnn.init_expr(mnist,expriment1)
-cnn.train_net(trainimg,trainlabel,cnn_file_name,training_epochs,cost,optm,accr,sess)
+cnn.show_trainimg(trainimg,sess,weights,biases)
+sess,accr = cnn.train_net(trainimg,trainlabel,cnn_file_name,training_epochs,cost,optm,accr,sess)
 test_acc = cnn.test_net(testimg,testlabel,sess,accr)
+test_acc_each_class = cnn.test_net_each_class(testimg,testlabel,sess,_corr)
 
 expriment2 = {'add_gaussian_noise':1 , 'add_label_noise':0, 'mu':0, 'std':8}
 trainimg, trainlabel, testimg, testlabel, cnn_file_name = cnn.init_expr(mnist,expriment2)
-sess,accr = cnn.train_net(trainimg,trainlabel,cnn_file_name,training_epochs)
+cnn.show_trainimg(trainimg,sess,weights,biases)
+sess,accr = cnn.train_net(trainimg,trainlabel,cnn_file_name,training_epochs,cost,optm,accr,sess)
 test_acc = cnn.test_net(testimg,testlabel,sess,accr)
 
 expriment3 = {'add_gaussian_noise':1 , 'add_label_noise':0, 'mu':0, 'std':32}
 trainimg, trainlabel, testimg, testlabel, cnn_file_name = cnn.init_expr(mnist,expriment3)
-sess,accr = cnn.train_net(trainimg,trainlabel,cnn_file_name,training_epochs)
+cnn.show_trainimg(trainimg,sess,weights,biases)
+sess,accr = cnn.train_net(trainimg,trainlabel,cnn_file_name,training_epochs,cost,optm,accr,sess)
 test_acc = cnn.test_net(testimg,testlabel,sess,accr)
 
-#input_r = cnn.get_tf_out(mnist.train.images,'input_r')
-#cnn.plot_input(input_r,0)
-#
-#expriment4 = {'add_gaussian_noise':1 , 'add_label_noise':0, 'mu':0, 'std':8}
-#trainimg, trainlabel, testimg, testlabel, cnn_file_name = cnn.init_expr(mnist,expriment4)
-##sess,accr = cnn.train_net(trainimg,trainlabel,cnn_file_name,training_epochs)
-#input_r = cnn.get_tf_out(trainimg,'input_r')
-#cnn.plot_input(input_r,0)
-#
-#expriment4 = {'add_gaussian_noise':1 , 'add_label_noise':0, 'mu':0, 'std':32}
-#trainimg, trainlabel, testimg, testlabel, cnn_file_name = cnn.init_expr(mnist,expriment4)
-##sess,accr = cnn.train_net(trainimg,trainlabel,cnn_file_name,training_epochs)
-#input_r = cnn.get_tf_out(trainimg,'input_r')
-#cnn.plot_input(input_r,0)
-#
-#expriment4 = {'add_gaussian_noise':1 , 'add_label_noise':0, 'mu':0, 'std':128}
-#trainimg, trainlabel, testimg, testlabel, cnn_file_name = cnn.init_expr(mnist,expriment4)
-##sess,accr = cnn.train_net(trainimg,trainlabel,cnn_file_name,training_epochs)
-#input_r = cnn.get_tf_out(trainimg,'input_r')
-#cnn.plot_input(input_r,0)
-
-
-
-
-#test_acc = cnn.test_net(testimg,testlabel,sess,accr)
+expriment4 = {'add_gaussian_noise':1 , 'add_label_noise':0, 'mu':0, 'std':128}
+trainimg, trainlabel, testimg, testlabel, cnn_file_name = cnn.init_expr(mnist,expriment4)
+cnn.show_trainimg(trainimg,sess,weights,biases)
+sess,accr = cnn.train_net(trainimg,trainlabel,cnn_file_name,training_epochs,cost,optm,accr,sess)
+test_acc = cnn.test_net(testimg,testlabel,sess,accr)
 
 
 
 expriment5 = {'add_gaussian_noise':0, 'add_label_noise':1, 'label_random_rate':0.05}
 trainimg, trainlabel, testimg, testlabel, cnn_file_name = cnn.init_expr(mnist,expriment5)
-sess,accr = cnn.train_net(trainimg,trainlabel,cnn_file_name,training_epochs)
+sess,accr = cnn.train_net(trainimg,trainlabel,cnn_file_name,training_epochs,cost,optm,accr,sess)
 test_acc = cnn.test_net(testimg,testlabel,sess,accr)
 
 expriment6 = {'add_gaussian_noise':0, 'add_label_noise':1, 'label_random_rate':0.15}
 trainimg, trainlabel, testimg, testlabel, cnn_file_name = cnn.init_expr(mnist,expriment6)
-sess,accr = cnn.train_net(trainimg,trainlabel,cnn_file_name,training_epochs)
+sess,accr = cnn.train_net(trainimg,trainlabel,cnn_file_name,training_epochs,cost,optm,accr,sess)
 test_acc = cnn.test_net(testimg,testlabel,sess,accr)
 
 expriment7 = {'add_gaussian_noise':0, 'add_label_noise':1, 'label_random_rate':0.5}
 trainimg, trainlabel, testimg, testlabel, cnn_file_name = cnn.init_expr(mnist,expriment7)
-sess,accr = cnn.train_net(trainimg,trainlabel,cnn_file_name,training_epochs)
+sess,accr = cnn.train_net(trainimg,trainlabel,cnn_file_name,training_epochs,cost,optm,accr,sess)
 test_acc = cnn.test_net(testimg,testlabel,sess,accr)
