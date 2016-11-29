@@ -10,50 +10,56 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import os
 
-
-n_input  = 784
-n_output = 10
-batch_size      = 100
-display_step    = 1
+# initialize parameters
+n_input      = 784
+n_output     = 10
+batch_size   = 100
+display_step = 1
    
-# PLACEHOLDERS
+# initialize place holder
 x = tf.placeholder(tf.float32, [None, n_input])
 y = tf.placeholder(tf.float32, [None, n_output])
 keepratio = tf.placeholder(tf.float32)
 
-
+# initialize the training and testing data as well as the intermediate file name
 def init_expr(mnist,expr):
+    #get data from mnist
     trainimg   = np.copy(mnist.train.images)
     trainlabel = np.copy(mnist.train.labels)
     testimg    = np.copy(mnist.test.images)
     testlabel  = np.copy(mnist.test.labels)
     
+    # get expr parameters
     add_gaussian_noise = expr['add_gaussian_noise']
     add_label_noise = expr['add_label_noise']
     
     if (add_gaussian_noise==1):
         mu = expr['mu']
         std = expr['std']
+        # add Gaussian noise to training images
         trainimg = add_noise(trainimg,mu,std)
         cnn_file_name = "mnist_gaussian_noise_mu%d_std%d.ckpt-" % (mu,std)
         print ("--- Add gaussian noise mu=%d std=%d ---" % (mu,std))
     elif (add_label_noise==1):
         label_random_rate = expr['label_random_rate']
+        # randomize the training labels
         trainlabel = random_label(trainlabel,label_random_rate)
         cnn_file_name = "mnist_label_noise_%.2f.ckpt-" % (label_random_rate)
         print ("--- Randomize %.2f percent trainlabel  ---" % (label_random_rate*100))
     else:
+        # using default training dataaset
         cnn_file_name = "mnist_cnn.ckpt-"
         
     return trainimg, trainlabel, testimg, testlabel, cnn_file_name
 
+# reshape the 784x1 training image to 28x28 image
 def get_images(training_set):
     """ Return a list containing the images from the MNIST data
     set. Each image is represented as a 2-d numpy array."""
     flattened_images = training_set
     return [np.reshape(f, (-1, 28)) for f in flattened_images]
 
-
+# plot first 100 images in 10x10 format
 def plot_images(trainimg):
     images = get_images(trainimg)
     #images = [image[3:25, 3:25] for image in images]
@@ -72,6 +78,7 @@ def plot_images(trainimg):
     plt.matshow(allImg, cmap=plt.get_cmap('gray'))
     plt.axis('off')
 
+# plot first 100 images in 10x10 format for multi-channel images
 def plot_input(images,channel):
     rowImg = [];
     allImg = [];
@@ -88,15 +95,18 @@ def plot_input(images,channel):
     plt.matshow(allImg, cmap=plt.get_cmap('gray'))
     plt.axis('off')
 
+# get intermediate images out from tensorflow graph
 def get_tf_out(trainimg,out_name,sess,weights,biases):
     conv_out = conv_basic(x, weights, biases, keepratio)
     out_data = sess.run(conv_out[out_name], feed_dict={x: trainimg[0:100, :]})
     return out_data
 
+# show training images in 10x10 format
 def show_trainimg(trainimg,sess,weights,biases):
     input_r = get_tf_out(trainimg,'input_r',sess,weights,biases)
     plot_input(input_r,0)
 
+# add Gaussian noise for different mean and standard deviation
 def add_noise(trainimg,mu,std):
     for i in range(trainimg.shape[0]):
         if std==0:
@@ -109,6 +119,7 @@ def add_noise(trainimg,mu,std):
         trainimg[i] = np.multiply(trainimg_noised, 1.0 / 255.0)
     return trainimg
 
+# randomize labels for different percentage
 def random_label(trainlabel,label_random_rate):
     train_size = trainlabel.shape[0]
     random_size =  int(train_size*label_random_rate)
@@ -125,6 +136,7 @@ def random_label(trainlabel,label_random_rate):
         random_complete += 1
     return trainlabel
     
+# initulize weights and biases
 def variable_init():
     weights  = {
         'wc1': tf.Variable(tf.truncated_normal([3, 3, 1, 64], stddev=0.1)),
@@ -140,7 +152,7 @@ def variable_init():
     }
     return weights,biases
 
-
+# define the CNN
 def conv_basic(_input, _w, _b, _keepratio):
     # INPUT
     _input_r = tf.reshape(_input, shape=[-1, 28, 28, 1])
@@ -174,14 +186,18 @@ def conv_basic(_input, _w, _b, _keepratio):
     return out
     
 
-
+# initialize CNN
 def init_graph(weights,biases):    
     # FUNCTIONS
-    #with tf.device(device_type):
+    #prediction of y_ based on x
     _pred = conv_basic(x, weights, biases, keepratio)['out']
+    #cost function
     cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(_pred, y))
+    #optimization function
     optm = tf.train.AdamOptimizer(learning_rate=0.001).minimize(cost)
+    #compare y_ with y
     _corr = tf.equal(tf.argmax(_pred,1), tf.argmax(y,1)) 
+    #test accuracy
     accr = tf.reduce_mean(tf.cast(_corr, tf.float32)) 
     init = tf.initialize_all_variables()
     sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
@@ -189,7 +205,7 @@ def init_graph(weights,biases):
 #    print ("=== GRAPH READY ===")
     return cost,optm,accr,sess,_corr
 
-#device_type = "/cpu:1"
+# train the cnn network
 def train_net(trainimg,trainlabel,cnn_file_name,training_epochs,cost,optm,accr,sess):
     init = tf.initialize_all_variables()
     sess.run(init)
@@ -235,6 +251,7 @@ def train_net(trainimg,trainlabel,cnn_file_name,training_epochs,cost,optm,accr,s
    
     return sess,accr
     
+# load next batch in training image
 def next_batch(trainimg, trainlabel, batch_size, index_in_epoch, epochs_completed):
     """Return the next `batch_size` examples from this data set."""
     start = index_in_epoch
@@ -257,14 +274,15 @@ def next_batch(trainimg, trainlabel, batch_size, index_in_epoch, epochs_complete
     return trainimg[start:end], trainlabel[start:end], index_in_epoch, epochs_completed, trainimg, trainlabel
 
  
-    
+# test the CNN network
 def test_net(testimg,testlabel,sess,accr):
     print ("=== CNN TESTING START ===")
     test_acc = sess.run(accr, feed_dict={x: testimg, y: testlabel, keepratio:1})
-    print (" TEST ACCURACY: %.5f" % (test_acc))
+    print (" TEST ERROR RATE: %.5f" % (1-test_acc))
     print ("=== CNN TESTING FINISHED ===")
     return test_acc
-    
+
+# test the CNN network for each class
 def test_net_each_class(testimg,testlabel,sess,_corr):
     test_corr = sess.run(_corr, feed_dict={x: testimg, y: testlabel, keepratio:1})      
     binary_corr = sess.run(tf.cast(test_corr,tf.float32))
@@ -284,37 +302,3 @@ def test_net_each_class(testimg,testlabel,sess,_corr):
 
 
 
-#plot_images(trainimg)
-
-
-#conv_out = conv_basic(x, weights, biases, keepratio)
-#
-#
-#
-#
-#input_r = sess.run(conv_out['input_r'], feed_dict={x: trainimg[0:100, :]})
-#plot_input(input_r,0)
-#
-#conv1   = sess.run(conv_out['conv1'], feed_dict={x: trainimg[0:100, :]})
-##plot_input(conv1,0)
-##plot_input(conv1,1)
-#
-#pool1   = sess.run(conv_out['pool1'], feed_dict={x: trainimg[0:100, :]})
-##plot_input(pool1,0)
-##plot_input(pool1,1)
-#
-#pool1_dr1   = sess.run(conv_out['pool1_dr1'], feed_dict={x: trainimg[0:100, :],keepratio: 0.7})
-##plot_input(pool1_dr1,0)
-##plot_input(pool1_dr1,1)
-#
-#conv2    = sess.run(conv_out['conv2'], feed_dict={x: trainimg[0:100, :],keepratio: 0.7})
-##plot_input(conv2,0)
-#plot_input(conv2,1)
-
-
-#pool2   = sess.run(conv_out['pool2'], feed_dict={x: trainimg[0:1, :]})
-#pool_dr2     = sess.run(conv_out['pool_dr2'], feed_dict={x: trainimg[0:1, :]})
-#dense1     = sess.run(conv_out['dense1'], feed_dict={x: trainimg[0:1, :]})
-#fc1     = sess.run(conv_out['fc1'], feed_dict={x: trainimg[0:1, :]})
-#fc_dr1     = sess.run(conv_out['fc_dr1'], feed_dict={x: trainimg[0:1, :]})
-#out     = sess.run(conv_out['out'], feed_dict={x: trainimg[0:1, :]})
